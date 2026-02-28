@@ -5,6 +5,21 @@ defmodule NxHailo.MixProject do
   @version "0.1.0"
   @all_targets [:rpi5]
 
+  # Models to download at compile time. Each HEF is ~40-100 MB.
+  #
+  # Use a bare atom for models in the default hailo8l zoo (v2.15.0):
+  #   :yolov8m, :yolov8n, :yolov8s, :yolov8l, :yolov8x,
+  #   :yolov8s_pose, :yolov8m_pose
+  #
+  # Use a {name, url} tuple for models with a non-standard download URL:
+  #   {:resnet_v1_50, "https://...hailo8/resnet_v1_50.hef"}
+  @models_to_download [:yolov8m]
+
+  @zoo_version "v2.15.0"
+  @zoo_base "https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ModelZoo/Compiled/#{@zoo_version}/hailo8l"
+  @coco_dataset_yml "https://raw.githubusercontent.com/ultralytics/ultralytics/refs/heads/main/ultralytics/cfg/datasets/coco.yaml"
+  @imagenet_classes_txt "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+
   def project do
     [
       app: @app,
@@ -37,24 +52,9 @@ defmodule NxHailo.MixProject do
   defp deps do
     [
       # Dependencies for all targets
-      {:nerves, "~> 1.10", runtime: false},
-      {:shoehorn, "~> 0.9.1"},
       {:ring_logger, "~> 0.11.0"},
       {:toolshed, "~> 0.4.0"},
 
-      # Allow Nerves.Runtime on host to support development, testing and CI.
-      # See config/host.exs for usage.
-      {:nerves_runtime, "~> 0.13.0"},
-
-      # Dependencies for all targets except :host
-      {:nerves_pack, "~> 0.7.1", targets: @all_targets},
-
-      # Dependencies for specific targets
-      # NOTE: It's generally low risk and recommended to follow minor version
-      # bumps to Nerves systems. Since these include Linux kernel and Erlang
-      # version updates, please review their release notes in case
-      # changes to your application are needed.
-      {:nerves_system_rpi5, "~> 0.6.1", runtime: false, targets: :rpi5},
       {:evision, "~> 0.2"},
       {:exla, "~> 0.10.0"},
       {:bandit, "~> 1.5"},
@@ -90,25 +90,43 @@ defmodule NxHailo.MixProject do
   defp aliases do
     [
       setup: ["deps.get"],
-      "compile.download_models": [&download_yolov8_model/1]
+      "compile.download_models": [&download_models/1]
     ]
   end
 
-  defp download_yolov8_model(_args) do
+  defp download_models(_args) do
     {:ok, _} = Application.ensure_all_started([:req])
 
-    dataset_yml =
-      "https://raw.githubusercontent.com/ultralytics/ultralytics/refs/heads/main/ultralytics/cfg/datasets/coco.yaml"
-
-    model_hef_url =
-      "https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/ModelZoo/Compiled/v2.15.0/hailo8l/yolov8m.hef"
-
     priv = Path.join(__DIR__, "priv")
-
     File.mkdir_p!(priv)
 
-    download_dataset_to_json_file(dataset_yml, Path.join(priv, "yolov8m_classes.json"))
-    download_model(model_hef_url, Path.join(priv, "yolov8m.hef"))
+    download_dataset_to_json_file(@coco_dataset_yml, Path.join(priv, "coco_classes.json"))
+    download_text_classes_to_json_file(@imagenet_classes_txt, Path.join(priv, "imagenet_classes.json"))
+
+    for model <- @models_to_download do
+      {name, url} =
+        case model do
+          {name, url} -> {name, url}
+          name when is_atom(name) -> {name, "#{@zoo_base}/#{name}.hef"}
+        end
+
+      download_model(url, Path.join(priv, "#{name}.hef"))
+    end
+  end
+
+  defp download_text_classes_to_json_file(url, filename) do
+    if File.exists?(filename) do
+      :ok
+    else
+      %{body: text} = Req.get!(url)
+
+      contents =
+        text
+        |> String.split("\n", trim: true)
+        |> Jason.encode!()
+
+      File.write!(filename, contents)
+    end
   end
 
   defp download_dataset_to_json_file(url, filename) do
