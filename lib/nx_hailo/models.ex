@@ -46,55 +46,12 @@ defmodule NxHailo.Models do
 
   @catalog %{
     # --- YOLOv8 Object Detection (hailo8l) ---
-    yolov8n: %{
-      hef_url: "#{@zoo8l_base}/yolov8n.hef",
-      parser: NxHailo.Parsers.YoloV8,
-      classes_file: "coco_classes.json",
-      chip: :hailo8l,
-      description: "YOLOv8 Nano — fastest, least accurate"
-    },
-    yolov8s: %{
-      hef_url: "#{@zoo8l_base}/yolov8s.hef",
-      parser: NxHailo.Parsers.YoloV8,
-      classes_file: "coco_classes.json",
-      chip: :hailo8l,
-      description: "YOLOv8 Small"
-    },
     yolov8m: %{
       hef_url: "#{@zoo8l_base}/yolov8m.hef",
       parser: NxHailo.Parsers.YoloV8,
       classes_file: "yolov8m_classes.json",
       chip: :hailo8l,
       description: "YOLOv8 Medium — balanced speed and accuracy"
-    },
-    yolov8l: %{
-      hef_url: "#{@zoo8l_base}/yolov8l.hef",
-      parser: NxHailo.Parsers.YoloV8,
-      classes_file: "coco_classes.json",
-      chip: :hailo8l,
-      description: "YOLOv8 Large"
-    },
-    yolov8x: %{
-      hef_url: "#{@zoo8l_base}/yolov8x.hef",
-      parser: NxHailo.Parsers.YoloV8,
-      classes_file: "coco_classes.json",
-      chip: :hailo8l,
-      description: "YOLOv8 XLarge — slowest, most accurate"
-    },
-    # --- YOLOv8 Pose Estimation (hailo8l) ---
-    yolov8s_pose: %{
-      hef_url: "#{@zoo8l_base}/yolov8s_pose.hef",
-      parser: NxHailo.Parsers.YoloV8Pose,
-      classes_file: nil,
-      chip: :hailo8l,
-      description: "YOLOv8 Small Pose — human keypoint detection"
-    },
-    yolov8m_pose: %{
-      hef_url: "#{@zoo8l_base}/yolov8m_pose.hef",
-      parser: NxHailo.Parsers.YoloV8Pose,
-      classes_file: nil,
-      chip: :hailo8l,
-      description: "YOLOv8 Medium Pose — human keypoint detection"
     },
     # --- Image Classification (hailo8) ---
     resnet_v1_50: %{
